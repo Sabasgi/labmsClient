@@ -56,6 +56,32 @@ export const useAuthUserStore = defineStore("AuthUserStore", {
                 reject(err)
             })
         });
+        },
+        GetAllStates() {
+            return new Promise((resolve, reject) => {
+                axios.get('o/state/getall')
+                    .then((res) => {
+                        console.log("States fetched successfully", res);
+                        resolve(res.data);
+                    })
+                    .catch((err) => {
+                        console.error("Error fetching states", err);
+                        reject(err);
+                    });
+            });
+        },
+        GetCitiesByStateId(stateId) {
+            return new Promise((resolve, reject) => {
+                axios.get("o/state/cities/"+stateId)
+                    .then((res) => {
+                        console.log(`Cities for state ID ${stateId} fetched successfully`, res);
+                        resolve(res.data);
+                    })
+                    .catch((err) => {
+                        console.error(`Error fetching cities for state ID ${stateId}`, err);
+                        reject(err);
+                    });
+            });
         }
     },
     persist: {

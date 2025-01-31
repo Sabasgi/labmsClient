@@ -196,10 +196,13 @@ onBeforeMount(() => {
 //   let newMenu = authstore.user.menus
 //   model = newMenu
 //   console.log("authstore.user.role getting menues - ",authstore.user)
-  let r ={
-    role_name:authstore.user.role
+  if (authstore.user.role){
+    let r ={
+      role_name:authstore.user.role
+    }
+    getRolesWiseMenu(r)
+
   }
-  getRolesWiseMenu(r)
 })
 </script>
 

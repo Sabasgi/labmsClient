@@ -248,10 +248,11 @@ if (process.env.NODE_ENV === "development") {
   axios.defaults.baseURL = baseURL;
   axios.interceptors.request.use((config) => {
     // Check if the request URL contains "/c"
-    console.log("axios intercetore config - ",config)
-    if (config.url.includes('/c')) {
-        // Add the Authorization header with the bearer token
-        const token = sessionStorage.getItem('t'); // Assuming token is stored in localStorage
+    // console.log("axios intercetore config - ",config)
+    if (config.url.includes('c/')) {
+      // Add the Authorization header with the bearer token
+      const token = sessionStorage.getItem('t'); // Assuming token is stored in localStorage
+      // console.log("CCCCCCCCCCCC",token, "AUUUTHH ",)
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }

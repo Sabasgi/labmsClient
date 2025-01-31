@@ -12,14 +12,16 @@ import emitter from './../../main';
 import { useRoute } from 'vue-router';
 
 const toast = useToast();
-const hStore = HospitalStore()
-const hospitals = ref(null);
 const userDialog = ref(false);
 const user = ref({});
 const IsEdit = ref(false)
 const roles = ref([]);
 const labs = ref([]);
 const route = useRoute();
+const users = ref([]);
+const labsUsers = ref([]);
+const expandedRows = ref({});
+const selectedUser=ref({});
 
 //stores
 const uStore = userStore();
@@ -41,19 +43,17 @@ const getRoles = () => {
 const getLaboratories = (code)=>{
     labstore.GetLabs()
     .then((data)=>{
-      //   labs.value=data
         if (code && data) {
           data.forEach((e)=>{
              if ( e.lab_code == code ){
-               // console.log("e eee   eee",e)
                labs.value.push(e)
-               // console.log("labsss",labs.value)
-               // user.lab_id = e.lab_id
+               user.value = {};
+               submitted.value = false;
+               userDialog.value = true;
             }
           })
       }else{
         labs.value=data
-
       }
     })
     .catch((er)=>{
@@ -76,33 +76,56 @@ const statuses = ref([
 ]);
 const productService = new ProductService();
 
-const getBadgeSeverity = (inventoryStatus) => {
-    switch (inventoryStatus.toLowerCase()) {
-        case 'instock':
+const getBadgeSeverity = (role) => {
+    switch (role.toLowerCase()) {
+        case 'admin':
             return 'success';
-        case 'lowstock':
-            return 'warning';
-        case 'outofstock':
-            return 'danger';
-        default:
-            return 'info';
+        // case 'user':
+            // return 'warning';
+        // case 'outofstock':
+            // return 'danger';
+        // default:
+            // return 'info';
     }
 };
-const addAdminCalled=(data)=>{
-   console.log("addAdminCalled",data)
-}
-onBeforeMount(() => {
-    initFilters();
-
-});
 // onUnmounted(() => {
 //       emitter.off('addAdmin', addAdminCalled); // Cleanup
 //     });
 onMounted(() => {
+    console.log("labs.value,labs.value",labs.value)
    const labCode = route.query.id;
+   if (labCode){
+    getRoles();
+    getLaboratories(labCode);
+   }
+   else
+   {
+    console.log("Before mount user details ",authstore.user.role)
+    if (authstore.user.role=="superadmin"){
+        uStore.GetLabsUsers()
+        .then((users)=>{
+            labsUsers.value = users
+            console.log("Uers recieved : ",labsUsers)
+        })
+        .catch((err)=>{
+            console.log("labs Uers ERRROR  : ",err)
+        })
+
+    }else{
+        //get lab details and all the users of that lab
+        uStore.GetAllUsers()
+        .then((u)=>{
+            users.value = u
+            console.log("Uers recieved : ",labsUsers)
+        })
+        .catch((err)=>{
+            console.log("Uers ERRROR  : ",err)
+        })
+
+        console.log("IT IS NOT ROLE SUPERADMIN")
+    }
+   }
    // console.log("labbbbb code - ",labId)
-   getRoles();
-   getLaboratories(labCode);
    // emitter.on('addAdmin', (payload) => {
    //      console.log('Event received with payload:', payload);
    //  });
@@ -115,9 +138,12 @@ const formatCurrency = (value) => {
 };
 
 const openNew = () => {
-   user.value = {};
+    user.value = {};
     submitted.value = false;
     userDialog.value = true;
+    getLaboratories()
+    getRoles()
+
 };
 
 const hideDialog = () => {
@@ -144,28 +170,27 @@ const saveUser = () => {
     }
 };
 const updateUser = () => {
-    console.log("ssave cklick")
+    console.log("update user cklick")
     submitted.value = true;
-    if (hospital.value.hospital_Name && hospital.value.hospital_Name.trim() && branch.value.branch_name.trim() && branch.value.branch_name){
-        console.log("hospital to updateeee ",hospital.value)
-        var ReqData = {
-            "hospital" :hospital.value,
-            "branch":branch.value
-        }
-          hStore.UpdateHospital(ReqData)
+    if (user.value.username){
+        console.log("user to updateeee ",user.value)
+        uStore.UpdateUser(user.value)
         .then((data)=>{
-            toast.add({severity:"success",summary:"Hospital Updated",detail:"Hospital Details are updated",life:3000})
+            console.log("daaat update user",data)
+            toast.add({severity:"success",summary:"User Updated",detail:"User Details are updated",life:3000})
             userDialog.value = false;
             user.value = {};
             branch.value ={};
         })
         .catch((err)=>{
-            toast.add({severity:"error",summary:"Hospital Update Error",detail:"Hospital Details are not updated",life:3000})
+            console.log("user to updateeee ",err)
+
+            toast.add({severity:"error",summary:"User Update Error",detail:"User Details are not updated",life:3000})
         })
     }
     IsEdit.value=false
 };
-const editHospital = (h) => {
+const editUser = (h) => {
     // console.log("hospital ",hospital)
     user.value = {...h} ;
     userDialog.value = true;
@@ -184,25 +209,25 @@ const deleteProduct = () => {
     toast.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
 };
 
-const findIndexById = (id) => {
-    let index = -1;
-    for (let i = 0; i < products.value.length; i++) {
-        if (products.value[i].id === id) {
-            index = i;
-            break;
-        }
-    }
-    return index;
-};
+// const findIndexById = (id) => {
+//     let index = -1;
+//     for (let i = 0; i < products.value.length; i++) {
+//         if (products.value[i].id === id) {
+//             index = i;
+//             break;
+//         }
+//     }
+//     return index;
+// };
 
-const createId = () => {
-    let id = '';
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 5; i++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return id;
-};
+// const createId = () => {
+//     let id = '';
+//     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+//     for (let i = 0; i < 5; i++) {
+//         id += chars.charAt(Math.floor(Math.random() * chars.length));
+//     }
+//     return id;
+// };
 
 const exportCSV = () => {
     dt.value.exportCSV();
@@ -218,10 +243,24 @@ const deleteSelectedProducts = () => {
     toast.add({ severity: 'success', summary: 'Successful', detail: 'Products Deleted', life: 3000 });
 };
 
-const initFilters = () => {
-    filters.value = {
-        global: { value: null, matchMode: FilterMatchMode.CONTAINS }
-    };
+// const initFilters = () => {
+//     filters.value = {
+//         global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+//     };
+// };
+const onRowExpand = (event) => {
+    conole.log("onRowExpand   evebnt ",event)
+    toast.add({ severity: 'info', summary: 'Product Expanded', detail: event.data.name, life: 3000 });
+};
+const onRowCollapse = (event) => {
+    conole.log(" onRowExpand Event ",event)
+    toast.add({ severity: 'success', summary: 'Product Collapsed', detail: event.data.name, life: 3000 });
+};
+const expandAll = () => {
+    labsUsers.value = labsUsers.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+};
+const collapseAll = () => {
+    labsUsers.value = null;
 };
 </script>
 
@@ -242,22 +281,23 @@ const initFilters = () => {
                         <Button label="Export" icon="pi pi-upload" severity="help" @click="exportCSV($event)" />
                     </template>
                 </Toolbar>
-
+                <!-- users data  -->
                 <DataTable
                     ref="dt"
-                    :value="hospitals"
-                    v-model:selection="selectedhospital"
+                    :value="users"
+                    v-model:selection="selectedUser"
                     dataKey="id"
                     :paginator="true"
                     :rows="10"
                     :filters="filters"
+                    v-if="users.length"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                     :rowsPerPageOptions="[5, 10, 25]"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products"
                 >
                     <template #header>
                         <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
-                            <h5 class="m-0">Manage Hospitals</h5>
+                            <h5 class="m-0">Manage Users</h5>
                             <IconField iconPosition="left" class="block mt-2 md:mt-0">
                                 <InputIcon class="pi pi-search" />
                                 <InputText class="w-full sm:w-auto" v-model="filters['global'].value" placeholder="Search..." />
@@ -268,14 +308,14 @@ const initFilters = () => {
                     <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
                     <Column field="code" header="Code" :sortable="true" headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
-                            <span class="p-column-title">Code</span>
-                            {{ slotProps.data.hcode }}
+                            <span class="p-column-title">ID</span>
+                            {{ slotProps.data.user_id }}
                         </template>
                     </Column>
                     <Column field="name" header="Name"  headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
                             <span class="p-column-title">Name</span>
-                            {{ slotProps.data.hospital_Name }}
+                            {{ slotProps.data.user_name }}
                         </template>
                     </Column>
                     <Column header="Image" headerStyle="width:14%; min-width:10rem;">
@@ -292,14 +332,14 @@ const initFilters = () => {
                     </Column> -->
                     <Column field="category" header="Description" headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
-                            <span class="p-column-title">Description</span>
-                            {{ slotProps.data.description }}
-                        </template>
+                            <span class="p-column-title">Role</span>
+                            <Tag :severity="getBadgeSeverity(slotProps.data.role)">{{ slotProps.data.role }}</Tag>
+                           </template>
                     </Column>
                     <Column field="category" header="City" headerStyle="width:5%; min-width:10rem;">
                         <template #body="slotProps">
-                            <span class="p-column-title">City</span>
-                            {{ slotProps.data.city }}
+                            <span class="p-column-title">Username</span>
+                            {{ slotProps.data.username }}
                         </template>
                     </Column>
                     <!-- <Column field="category" header="Address" headerStyle="width:10%; min-width:10rem;">
@@ -314,12 +354,12 @@ const initFilters = () => {
                             <Rating :modelValue="slotProps.data.city" :readonly="true" :cancel="false" />
                         </template>
                     </Column> -->
-                     <Column field="category" header="State" headerStyle="width:14%; min-width:10rem;">
+                     <!-- <Column field="category" header="State" headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
                             <span class="p-column-title">State</span>
                             {{ slotProps.data.state }}
                         </template>
-                    </Column>
+                    </Column> -->
                     <!-- <Column field="inventoryStatus" header="Status" :sortable="true" headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
                             <span class="p-column-title">Status</span>
@@ -328,10 +368,79 @@ const initFilters = () => {
                     </Column> -->
                     <Column headerStyle="min-width:10rem;"  header="Operations">
                         <template #body="slotProps">
-                            <Button icon="pi pi-pencil" class="mr-2" severity="success" rounded @click="editHospital(slotProps.data)" />
+                            <Button icon="pi pi-pencil" class="mr-2" severity="success" rounded @click="editUser(slotProps.data)" />
                             <Button icon="pi pi-trash" class="mt-2" severity="warning" rounded @click="confirmDeleteProduct(slotProps.data)" />
                         </template>
                     </Column>
+                </DataTable>
+                <!-- super admin users data -->
+                <DataTable
+                :value="labsUsers"
+                v-model:expandedRows="labsUsers.users"
+
+                dataKey="lab_id"
+                @rowExpand="onRowExpand"
+                selectionMode="single"
+                @rowCollapse="onRowCollapse"
+                tableStyle="min-width: 60rem; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;"
+                >
+                <template #header>
+                    <div class="flex flex-wrap justify-end gap-2 p-2 bg-gray-100">
+                    <Button text icon="pi pi-plus" label="Expand All" @click="expandAll" />
+                    <Button text icon="pi pi-minus" label="Collapse All" @click="collapseAll" />
+                    </div>
+                </template>
+
+                <Column expander style="width: 5rem; text-align: center;" />
+
+                <Column field="lab_id" header="Lab ID">
+                    <template #body="slotProps">
+                    <strong>{{ slotProps.data.lab_id }}</strong>
+                    </template>
+                </Column>
+
+                <Column field="lab_name" header="Lab Name">
+                    <template #body="slotProps">
+                    <span>{{ slotProps.data.lab_name }}</span>
+                    </template>
+                </Column>
+
+                <Column field="lab_code" header="Lab Code">
+                    <template #body="slotProps">
+                    <span>{{ slotProps.data.lab_code }}</span>
+                    </template>
+                </Column>
+
+                <Column field="validity_date" header="Validity Date">
+                    <template #body="slotProps">
+                    <span>{{ slotProps.data.validity_date || 'N/A' }}</span>
+                    </template>
+                </Column>
+
+                <template #expansion="slotProps">
+                    <div class="p-4 bg-gray-50 rounded-md">
+                    <h5 class="font-bold mb-3">Users of {{ slotProps.data.lab_name }}</h5>
+                    <DataTable :value="slotProps.data.users || []" tableStyle="min-width: 40rem;">
+                        <Column field="user_id" header="User ID" sortable></Column>
+                        <Column field="username" header="Username" sortable></Column>
+                        <Column field="email" header="Email" sortable></Column>
+                        <Column field="role" header="Role" :sortable="true" headerStyle="width:14%; min-width:10rem;">
+                        <template #body="slotProps">
+                            <span class="p-column-title">Role</span>
+                            <Tag :severity="getBadgeSeverity(slotProps.data.role)">{{ slotProps.data.role }}</Tag>
+                        </template>
+                    </Column>
+                        <!-- <Column field="role" header="Role" sortable></Column> -->
+                        <Column field="phone_number" header="Phone Number" sortable></Column>
+                        <Column headerStyle="width:4rem">
+                        <template #body>
+                            <Button icon="pi pi-search" class="p-button-text" />
+                        </template>
+                        </Column>
+                    </DataTable>
+                    <p v-if="!slotProps.data.users || slotProps.data.users.length === 0" class="text-gray-500 mt-3">No users available for this lab.</p>
+                    </div>
+                </template>
                 </DataTable>
 
                 <Dialog v-model:visible="userDialog" :style="{ width: '90%' }" header="Hospital Details" :modal="true" class="p-fluid">
@@ -424,8 +533,8 @@ const initFilters = () => {
                            </div>
                            <div class="field col-4 md:col-6">
                               <label for="role">for Lab </label>
-                              <Dropdown id="role" v-model="user.lab_id" :options="labs" optionLabel="lab_name" optionValue="lab_id" placeholder="Select Lab" required="true" :invalid="submitted && !user.role" />
-                              <small class="p-invalid" v-if="submitted && !user.role">Role is required.</small>
+                              <Dropdown id="role" v-model="user.lab_id" :options="labs" optionLabel="lab_name" optionValue="lab_id" placeholder="Select Lab" required="true" :invalid="submitted && !user.lab_id" />
+                              <small class="p-invalid" v-if="submitted && !user.lab_id">lab is required.</small>
                            </div>
                            <!-- Age -->
                            <div class="field col-4 md:col-6">
