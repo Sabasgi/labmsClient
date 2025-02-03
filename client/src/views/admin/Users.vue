@@ -14,7 +14,7 @@ import { useRoute } from 'vue-router';
 const toast = useToast();
 const userDialog = ref(false);
 const user = ref({});
-const IsEdit = ref(false)
+const IsEdit = ref(false);
 const roles = ref([]);
 const labs = ref([]);
 const route = useRoute();
@@ -112,6 +112,7 @@ onMounted(() => {
         })
 
     }else{
+        console.log("IT IS NOT ROLE SUPERADMIN")
         //get lab details and all the users of that lab
         uStore.GetAllUsers()
         .then((u)=>{
@@ -122,16 +123,9 @@ onMounted(() => {
             console.log("Uers ERRROR  : ",err)
         })
 
-        console.log("IT IS NOT ROLE SUPERADMIN")
     }
    }
-   // console.log("labbbbb code - ",labId)
-   // emitter.on('addAdmin', (payload) => {
-   //      console.log('Event received with payload:', payload);
-   //  });
-   // // );
 
-    // productService.getProducts().then((data) => (products.value = data));
 });
 const formatCurrency = (value) => {
     return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
@@ -209,25 +203,7 @@ const deleteProduct = () => {
     toast.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
 };
 
-// const findIndexById = (id) => {
-//     let index = -1;
-//     for (let i = 0; i < products.value.length; i++) {
-//         if (products.value[i].id === id) {
-//             index = i;
-//             break;
-//         }
-//     }
-//     return index;
-// };
 
-// const createId = () => {
-//     let id = '';
-//     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-//     for (let i = 0; i < 5; i++) {
-//         id += chars.charAt(Math.floor(Math.random() * chars.length));
-//     }
-//     return id;
-// };
 
 const exportCSV = () => {
     dt.value.exportCSV();
@@ -243,17 +219,11 @@ const deleteSelectedProducts = () => {
     toast.add({ severity: 'success', summary: 'Successful', detail: 'Products Deleted', life: 3000 });
 };
 
-// const initFilters = () => {
-//     filters.value = {
-//         global: { value: null, matchMode: FilterMatchMode.CONTAINS }
-//     };
-// };
+
 const onRowExpand = (event) => {
-    conole.log("onRowExpand   evebnt ",event)
     toast.add({ severity: 'info', summary: 'Product Expanded', detail: event.data.name, life: 3000 });
 };
 const onRowCollapse = (event) => {
-    conole.log(" onRowExpand Event ",event)
     toast.add({ severity: 'success', summary: 'Product Collapsed', detail: event.data.name, life: 3000 });
 };
 const expandAll = () => {
@@ -280,9 +250,10 @@ const collapseAll = () => {
                         <FileUpload mode="basic" accept="image/*" :maxFileSize="1000000" label="Import" chooseLabel="Import" class="mr-2 inline-block" />
                         <Button label="Export" icon="pi pi-upload" severity="help" @click="exportCSV($event)" />
                     </template>
+
                 </Toolbar>
                 <!-- users data  -->
-                <DataTable
+                <!-- <DataTable
                     ref="dt"
                     :value="users"
                     v-model:selection="selectedUser"
@@ -290,7 +261,7 @@ const collapseAll = () => {
                     :paginator="true"
                     :rows="10"
                     :filters="filters"
-                    v-if="users.length"
+                    v-if=" users && users.length > 0 && authstore.user.role === 'admin' "
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
                     :rowsPerPageOptions="[5, 10, 25]"
                     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products"
@@ -304,7 +275,6 @@ const collapseAll = () => {
                             </IconField>
                         </div>
                     </template>
-
                     <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
                     <Column field="code" header="Code" :sortable="true" headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
@@ -324,12 +294,7 @@ const collapseAll = () => {
                             <img :src="'/demo/images/hospital/' + slotProps.data.hospital_Logo" :alt="slotProps.data.hospital_Logo" class="shadow-2" width="80" />
                         </template>
                     </Column>
-                    <!-- <Column field="price" header="Price" :sortable="true" headerStyle="width:14%; min-width:8rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Price</span>
-                            {{ formatCurrency(slotProps.data.price) }}
-                        </template>
-                    </Column> -->
+
                     <Column field="category" header="Description" headerStyle="width:14%; min-width:10rem;">
                         <template #body="slotProps">
                             <span class="p-column-title">Role</span>
@@ -342,42 +307,18 @@ const collapseAll = () => {
                             {{ slotProps.data.username }}
                         </template>
                     </Column>
-                    <!-- <Column field="category" header="Address" headerStyle="width:10%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Address</span>
-                            {{ slotProps.data.address }}
-                        </template>
-                    </Column> -->
-                    <!-- <Column field="rating" header="City" headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">City</span>
-                            <Rating :modelValue="slotProps.data.city" :readonly="true" :cancel="false" />
-                        </template>
-                    </Column> -->
-                     <!-- <Column field="category" header="State" headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">State</span>
-                            {{ slotProps.data.state }}
-                        </template>
-                    </Column> -->
-                    <!-- <Column field="inventoryStatus" header="Status" :sortable="true" headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Status</span>
-                            <Tag :severity="getBadgeSeverity(slotProps.data.inventoryStatus)">{{ slotProps.data.inventoryStatus }}</Tag>
-                        </template>
-                    </Column> -->
                     <Column headerStyle="min-width:10rem;"  header="Operations">
                         <template #body="slotProps">
                             <Button icon="pi pi-pencil" class="mr-2" severity="success" rounded @click="editUser(slotProps.data)" />
                             <Button icon="pi pi-trash" class="mt-2" severity="warning" rounded @click="confirmDeleteProduct(slotProps.data)" />
                         </template>
                     </Column>
-                </DataTable>
+                </DataTable> -->
                 <!-- super admin users data -->
                 <DataTable
                 :value="labsUsers"
                 v-model:expandedRows="labsUsers.users"
-
+                v-if=" labsUsers && labsUsers.length > 0 && authstore.user.role === 'superadmin' "
                 dataKey="lab_id"
                 @rowExpand="onRowExpand"
                 selectionMode="single"
@@ -390,7 +331,8 @@ const collapseAll = () => {
                     <Button text icon="pi pi-minus" label="Collapse All" @click="collapseAll" />
                     </div>
                 </template>
-
+                <template #empty> No Users found. </template>
+                <template #loading> Loading users data. Please wait. </template>
                 <Column expander style="width: 5rem; text-align: center;" />
 
                 <Column field="lab_id" header="Lab ID">
@@ -441,6 +383,7 @@ const collapseAll = () => {
                     <p v-if="!slotProps.data.users || slotProps.data.users.length === 0" class="text-gray-500 mt-3">No users available for this lab.</p>
                     </div>
                 </template>
+
                 </DataTable>
 
                 <Dialog v-model:visible="userDialog" :style="{ width: '90%' }" header="Hospital Details" :modal="true" class="p-fluid">

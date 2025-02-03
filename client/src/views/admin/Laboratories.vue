@@ -12,8 +12,9 @@ import { useRouter } from 'vue-router';
 const toast = useToast();
 const labstore = LabStore()
 const labs = ref([]);
-const labsbranches = ref([]);
+// const labsbranches = ref([]);
 const labDialog = ref(false);
+const selectedLab=ref(null);
 const lab = ref({});
 const IsEdit = ref(false)
 const branch = ref({});
@@ -21,25 +22,45 @@ const router = useRouter()
 const states = ref([]);
 const cities = ref([]);
 const authstore = useAuthUserStore();
+const expandedRows = ref([]);
+// Fetch laboratories based on role
+const fetchData = async () => {
+    try {
+        if (authstore.user.role === "superadmin") {
+            const data = await labstore.GetLabsBranches();
+            labs.value = data;
+        } else if (authstore.user.role === "admin") {
+            // const data = await labstore.GetLabs(); //admin
+            const data = await labstore.GetLabsBranches();
+            labs.value = data;
+        }
+    } catch (error) {
+        console.error("Error fetching labs:", error);
+        toast.add({severity:"error",summary:"failed",detail:"could not get data"+error,life:3000})
 
-const getLaboratories = ()=>{
-    labstore.GetLabs()
-    .then((data)=>{
-        labs.value=data
-    })
-    .catch((er)=>{
-        console.log("Error ",er)
-    })
-}
-const getLabsBranches = ()=>{
-    labstore.GetLabsBranches()
-    .then((data)=>{
-        labsbranches.value=data
-    })
-    .catch((er)=>{
-        console.log("Error ",er)
-    })
-}
+    }
+};
+// const getLaboratories = ()=>{
+//     labstore.GetLabs()
+//     .then((data)=>{
+//         // labs.value=data
+//         labs.value = data;
+//         // labs.value.push()
+//         console.log("labssssssssss",labs.value)
+//     })
+//     .catch((er)=>{
+//         console.log("Error ",er)
+//     })
+// }
+// const getLabsBranches = ()=>{
+//     labstore.GetLabsBranches()
+//     .then((data)=>{
+//         labsbranches.value=data
+//     })
+//     .catch((er)=>{
+//         console.log("Error ",er)
+//     })
+// }
 const getStates = ()=>{
     authstore.GetAllStates()
     .then((data)=>{
@@ -65,7 +86,7 @@ const products = ref(null);
 const deleteProductDialog = ref(false);
 const deleteProductsDialog = ref(false);
 const selectedProducts = ref(null);
-const dt = ref(null);
+// const dt = ref(null);
 const filters = ref({});
 const submitted = ref(false);
 const statuses = ref([
@@ -73,33 +94,38 @@ const statuses = ref([
     { label: 'LOWSTOCK', value: 'lowstock' },
     { label: 'OUTOFSTOCK', value: 'outofstock' }
 ]);
-const productService = new ProductService();
 
-const getBadgeSeverity = (inventoryStatus) => {
-    switch (inventoryStatus.toLowerCase()) {
-        case 'instock':
-            return 'success';
-        case 'lowstock':
-            return 'warning';
-        case 'outofstock':
-            return 'danger';
-        default:
-            return 'info';
-    }
-};
-
-onBeforeMount(() => {
-    initFilters();
-});
 onMounted(() => {
-   getLaboratories()
-   getLabsBranches()
+    // if (authstore.user.role=="superadmin"){
+    //     getLabsBranches()
+    //     // uStore.GetLabsUsers()
+    //     // .then((users)=>{
+    //     //     labsUsers.value = users
+    //     //     console.log("Uers recieved : ",labsUsers)
+    //     // })
+    //     // .catch((err)=>{
+    //     //     console.log("labs Uers ERRROR  : ",err)
+    //     // })
 
-    // productService.getProducts().then((data) => (products.value = data));
+    // }else{
+    //     console.log("IT IS NOT ROLE SUPERADMIN")
+    //     getLaboratories()
+    //     //get lab details and all the users of that lab
+    //     // uStore.GetAllUsers()
+    //     // .then((u)=>{
+    //     //     users.value = u
+    //     //     console.log("Uers recieved : ",labsUsers)
+    //     // })
+    //     // .catch((err)=>{
+    //     //     console.log("Uers ERRROR  : ",err)
+    //     // })
+
+    // }
+    fetchData()
 });
-const formatCurrency = (value) => {
-    return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-};
+// const formatCurrency = (value) => {
+//     return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+// };
 
 const openNew = () => {
     lab.value = {};
@@ -151,22 +177,6 @@ const createBranch = () => {
     submitted.value = true;
     if (branch.value.branch_name && branch.value.lab_id){
       //   console.log("lab to updateeee ",lab.value)
-      //   var ReqData = {
-      //       "hospital" :hospital.value,
-      //       "branch":branch.value
-      //   }
-        // if (hospital.value.h_Id) {
-        //     // product.value.inventoryStatus = product.value.inventoryStatus.value ? product.value.inventoryStatus.value : product.value.inventoryStatus;
-        //     // products.value[findIndexById(product.value.id)] = product.value;
-        //     toast.add({ severity: 'success', summary: 'Successful', detail: 'Product Updated', life: 3000 });
-        // } else {
-        //     product.value.id = createId();
-        //     product.value.code = createId();
-        //     product.value.image = 'product-placeholder.svg';
-        //     product.value.inventoryStatus = product.value.inventoryStatus ? product.value.inventoryStatus.value : 'INSTOCK';
-        //     products.value.push(product.value);
-        //     toast.add({ severity: 'success', summary: 'Successful', detail: 'Product Created', life: 3000 });
-        // }
         labstore.CreateBranch(branch.value)
         .then((data)=>{
             console.log("data",data)
@@ -184,9 +194,9 @@ const createBranch = () => {
     branch.value ={};
     lab.value = {};
 };
-const editLab = (l) => {
-    // console.log("hospital ",hospital)
-    lab.value = {...l} ;
+const editLab = (b) => {
+    console.log("labbb ediittt ",b)
+    branch.value = {...b} ;
     labDialog.value = true;
     IsEdit.value = true;
 };
@@ -197,31 +207,11 @@ const confirmDeleteProduct = (editProduct) => {
 };
 
 const deleteProduct = () => {
-    products.value = products.value.filter((val) => val.id !== product.value.id);
-    deleteProductDialog.value = false;
-    product.value = {};
+    // products.value = products.value.filter((val) => val.id !== product.value.id);
+    // deleteProductDialog.value = false;
+    // product.value = {};
     toast.add({ severity: 'success', summary: 'Successful', detail: 'Product Deleted', life: 3000 });
 };
-
-// const findIndexById = (id) => {
-//     let index = -1;
-//     for (let i = 0; i < products.value.length; i++) {
-//         if (products.value[i].id === id) {
-//             index = i;
-//             break;
-//         }
-//     }
-//     return index;
-// };
-
-// const createId = () => {
-//     let id = '';
-//     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-//     for (let i = 0; i < 5; i++) {
-//         id += chars.charAt(Math.floor(Math.random() * chars.length));
-//     }
-//     return id;
-// };
 
 const exportCSV = () => {
     dt.value.exportCSV();
@@ -243,24 +233,45 @@ const initFilters = () => {
     };
 };
 const addAdminClicked=(d) =>{
-   // console.log("Admin clicked - ", d)
+   console.log("Admin clicked - ", d)
    router.push({ path: '/users', query: { id: d.lab_code } });
    // emitter.emit("addAdmin", d); // Emit the event
 }
+const createDepartment=(d) =>{
+   console.log("createDepartment clicked - ", d)
+   router.push({ path: '/departments', query: { b: d } });
+   // emitter.emit("addAdmin", d); // Emit the event
+}
 const createBranchClicked=(d) =>{
+    console.log("dddddddddddddddddddddddddddddd- ",d)
     lab.value.lab_name = d.lab_name
     lab.value.lab_code = d.lab_code
     lab.value.lab_id = d.lab_id
     labDialog.value = true;
     IsEdit.value = true;
-    console.log("createBranchClicked clicked - ", d)
+    // console.log("createBranchClicked clicked - ", d)
     branch.value.lab_id = d.lab_id
     getStates()
-
-
 //    router.push({ path: '/users', query: { id: d.lab_code } });
    // emitter.emit("addAdmin", d); // Emit the event
 }
+const onRowExpand = (event) => {
+    lab.value.lab_name = event.data.lab_name
+    lab.value.lab_code = event.data.lab_code
+    lab.value.lab_id = event.data.lab_id
+    console.log("event row expanded ",lab.value)
+    toast.add({ severity: 'info', summary: 'Product Expanded', detail: event.data.name, life: 3000 });
+};
+const onRowCollapse = (event) => {
+    toast.add({ severity: 'success', summary: 'Product Collapsed', detail: event.data.name, life: 3000 });
+};
+const expandAll = () => {
+    expandedRows.value = labs.value.reduce((acc, p) => (acc[p.id] = true) && acc, {});
+
+};
+const collapseAll = () => {
+    expandedRows.value = null;
+};
 </script>
 
 <template>
@@ -270,117 +281,95 @@ const createBranchClicked=(d) =>{
                 <Toolbar class="mb-4">
                     <template v-slot:start>
                         <div class="my-2">
-                            <Button label="New" icon="pi pi-plus" class="mr-2" severity="success" @click="openNew" />
-                            <Button label="Delete" icon="pi pi-trash" severity="danger" @click="confirmDeleteSelected" :disabled="!selectedProducts || !selectedProducts.length" />
+                            <Button label="New" icon="pi pi-plus" class="mr-2" severity="success" @click="openNew"  v-if="authstore.user.role==='superadmin'"/>
+                            <Button label="Delete" icon="pi pi-trash" severity="danger" @click="confirmDeleteSelected" :disabled="!selectedProducts || !selectedProducts.length" v-if="authstore.user.role==='superadmin'"/>
                         </div>
                     </template>
-
                     <template v-slot:end>
                         <FileUpload mode="basic" accept="image/*" :maxFileSize="1000000" label="Import" chooseLabel="Import" class="mr-2 inline-block" />
                         <Button label="Export" icon="pi pi-upload" severity="help" @click="exportCSV($event)" />
                     </template>
                 </Toolbar>
-
+                <!-- super admin view -->
                 <DataTable
-                    ref="dt"
                     :value="labs"
-                    v-model:selection="selectedlab"
+                    v-model:expandedRows="expandedRows"
+                    v-if="labs && labs.length > 0"
                     dataKey="lab_id"
-                    :paginator="true"
-                    :rows="10"
-                    :filters="filters"
-                    paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
-                    :rowsPerPageOptions="[5, 10, 25]"
-                    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products"
+                    @rowExpand="onRowExpand"
+                    selectionMode="single"
+                    @rowCollapse="onRowCollapse"
+                    tableStyle="min-width: 60rem; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;"
                 >
                     <template #header>
-                        <div class="flex flex-column md:flex-row md:justify-content-between md:align-items-center">
-                            <h5 class="m-0">Manage Labs</h5>
-                            <IconField iconPosition="left" class="block mt-2 md:mt-0">
-                                <InputIcon class="pi pi-search" />
-                                <InputText class="w-full sm:w-auto" v-model="filters['global'].value" placeholder="Search..." />
-                            </IconField>
+                        <div class="flex flex-wrap justify-end gap-2 p-2 bg-gray-100"
+                             v-if ="authstore.user.role==='superadmin'">
+                            <Button text icon="pi pi-plus" label="Expand All" @click="expandAll" />
+                            <Button text icon="pi pi-minus" label="Collapse All" @click="collapseAll" />
                         </div>
                     </template>
-
-                    <Column selectionMode="multiple" headerStyle="width: 3rem"></Column>
-                    <Column field="code" header="Code" :sortable="true" headerStyle="width:14%; min-width:10rem;">
+                    <template #empty> No Users found. </template>
+                    <template #loading> Loading users data. Please wait. </template>
+                    <Column expander style="width: 5rem; text-align: center;" />
+                    <Column field="lab_id" header="Lab ID">
                         <template #body="slotProps">
-                            <span class="p-column-title">Code</span>
-                            {{ slotProps.data.lab_code }}
-                        </template>
-                    </Column>
-                    <Column field="name" header="Name"  headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Name</span>
-                            {{ slotProps.data.lab_name }}
-                        </template>
-                    </Column>
-                    <!-- <Column header="Image" headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Image</span>
-                            <img :src="'/demo/images/hospital/' + slotProps.data.hospital_Logo" :alt="slotProps.data.hospital_Logo" class="shadow-2" width="80" />
-                        </template>
-                    </Column> -->
-                    <!-- <Column field="price" header="Price" :sortable="true" headerStyle="width:14%; min-width:8rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Price</span>
-                            {{ formatCurrency(slotProps.data.price) }}
-                        </template>
-                    </Column> -->
-                   <!-- <Column field="category" header="Description" headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Description</span>
-                            {{ slotProps.data.description }}
-                        </template>
-                    </Column>
-                    <Column field="category" header="City" headerStyle="width:5%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">City</span>
-                            {{ slotProps.data.city }}
-                        </template>
-                    </Column> -->
-                    <!-- <Column field="category" header="Address" headerStyle="width:10%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Address</span>
-                            {{ slotProps.data.address }}
-                        </template>
-                    </Column> -->
-                    <!-- <Column field="rating" header="City" headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">City</span>
-                            <Rating :modelValue="slotProps.data.city" :readonly="true" :cancel="false" />
-                        </template>
-                    </Column> -->
-                     <Column field="category" header="State" headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">State</span>
-                            {{ slotProps.data.state }}punre
-                        </template>
-                    </Column>
-                    <!-- <Column field="inventoryStatus" header="Status" :sortable="true" headerStyle="width:14%; min-width:10rem;">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Status</span>
-                            <Tag :severity="getBadgeSeverity(slotProps.data.inventoryStatus)">{{ slotProps.data.inventoryStatus }}</Tag>
-                        </template>
-                    </Column> -->
-                    <Column headerStyle="min-width:10rem;"  header="Operations">
-                        <template #body="slotProps">
-                            <Button icon="pi pi-pencil" class="mr-2" severity="success" rounded @click="editLab(slotProps.data)" />
-                            <Button icon="pi pi-trash" class="mt-2" severity="warning" rounded @click="confirmDeleteProduct(slotProps.data)" />
-                        </template>
-                    </Column>
-                    <Column headerStyle="min-width:10rem;"  header="Operations">
-                        <template #body="slotProps">
-                            <Button icon="pi pi-user-plus" class="mt-2" severity="warning" label ="Admin" rounded @click="addAdminClicked(slotProps.data)" />
-                        </template>
-                    </Column>
-                    <Column headerStyle="min-width:10rem;"  header="Branch">
-                        <template #body="slotProps">
-                            <Button icon="pi pi-user-plus" class="mt-2" severity="warning" label ="Admin" rounded @click="createBranchClicked(slotProps.data)" />
+                            <strong>{{ slotProps.data.lab_id }}</strong>
                         </template>
                     </Column>
 
+                    <Column field="lab_name" header="Lab Name">
+                        <template #body="slotProps">
+                            <span>{{ slotProps.data.lab_name }}</span>
+                        </template>
+                    </Column>
+
+                    <Column field="lab_code" header="Lab Code">
+                        <template #body="slotProps">
+                            <span>{{ slotProps.data.lab_code }}</span>
+                        </template>
+                    </Column>
+                    <Column field="admin Add" header="Validity Date">
+                        <template #body="slotProps">
+                            <span>{{ slotProps.data.validity_date || 'N/A' }}</span>
+                        </template>
+                    </Column>
+                    <Column field="admin Add" header="Add admin">
+                        <template #body="slotProps">
+                        <Button label="add admin" outlined class="mb-2 mr-2" @click="addAdminClicked(slotProps.data)"/>
+                        </template>
+                    </Column>
+                    <Column field="add Branch" header="add Branch">
+                        <template #body="slotProps">
+                        <Button label="create branch" outlined class="mb-2 mr-2" @click="createBranchClicked(slotProps.data)"/>
+                        </template>
+                    </Column>
+                    <template #expansion="slotProps">
+                        <div v-if="slotProps.data.branches && slotProps.data.branches.length >0">
+                            <h5 class="font-bold mb-3">Branches of {{ slotProps.data.lab_name }}</h5>
+                            <DataTable :value="slotProps.data.branches || []" tableStyle="min-width: 40rem;">
+                                <Column field="branch_id" header="Branch ID" sortable></Column>
+                                <Column field="branch_name" header="Branch Name" sortable></Column>
+                                <Column field="branch_code" header="Branch Code" sortable></Column>
+                                <Column field="address" header="Address" sortable></Column>
+                                <Column field="city_id" header="City ID" sortable></Column>
+                                <Column field="city_id" header="City ID" sortable></Column>
+                                <Column field="Operations" header="Operations" >
+                                    <template #body="slotProps">
+                                    <Button icon="pi pi-pencil" severity="success"  class="m-1"  rounded variant="outlined" aria-label="Search"  @click="editLab(slotProps.data)" />
+                                    <Button icon="pi pi-trash" severity="success" class="m-1" rounded variant="outlined" aria-label="Search"  @click="deleteProduct(slotProps.data)" />
+                                    </template>
+                                </Column>
+                                <Column field="Operations" header="Operations" >
+                                    <template #body="slotProps">
+                                    <Button icon="pi pi-pencil" severity="success"  class="m-1"  rounded variant="outlined" aria-label="Search"  @click="createDepartment(slotProps.data)" />
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </div>
+                        <p v-if="(!slotProps.data.branches || slotProps.data.branches.length === 0)&& authstore.user.role === 'superadmin'" class="text-gray-500 mt-3">
+                            No branches available for this lab.
+                        </p>
+                    </template>
                 </DataTable>
                 <Dialog v-model:visible="labDialog" :style="{ width: '90%' }" header="Lab Details" :modal="true" class="p-fluid">
 
@@ -465,7 +454,6 @@ const createBranchClicked=(d) =>{
                         <Button label="Yes" icon="pi pi-check" text @click="deleteProduct" />
                     </template>
                 </Dialog>
-
                 <Dialog v-model:visible="deleteProductsDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
                     <div class="flex align-items-center justify-content-center">
                         <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />

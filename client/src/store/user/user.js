@@ -69,7 +69,7 @@ export const userStore = defineStore("userStore",{
        GetAllUsers(){
         console.log("get all labs users o all lab ")
         return new Promise((resolve, reject) => {
-           axios.get("c/users/getall")
+           axios.get("c/user/getall")
            .then((res)=>{
              console.log("Response of GetLabsUsers role ",res)
              resolve(res.data)

@@ -2,7 +2,9 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useLayout } from '@/layout/composables/layout';
 import { useRouter } from 'vue-router';
+import { useAuthUserStore } from './../store/AuthStore/Auth';
 
+const authstore= useAuthUserStore();
 const { layoutConfig, onMenuToggle } = useLayout();
 
 const outsideClickListener = ref(null);
@@ -73,9 +75,15 @@ const isOutsideClicked = (event) => {
 
         <button class="p-link layout-menu-button layout-topbar-button" @click="onMenuToggle()">
             <i class="pi pi-bars"></i>
+            <span>
+                {{ authstore.user.role }}
+            </span>
         </button>
 
         <button class="p-link layout-topbar-menu-button layout-topbar-button" @click="onTopBarMenuButton()">
+            <span>
+                {{ authstore.user.role }}
+            </span>
             <i class="pi pi-ellipsis-v"></i>
         </button>
 

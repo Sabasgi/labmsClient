@@ -91,6 +91,36 @@ export const LabStore = defineStore(('LabStore'),{
            })
           });
       },
+
+      GetBranches(){
+        console.log("get all branchesss o all lab ")
+        return new Promise((resolve, reject) => {
+           axios.get("c/branch/getall")
+           .then((res)=>{
+             console.log("Response of branches  ",res)
+             resolve(res.data)
+           })
+           .catch((err)=>{
+             console.log("ERR of GetLabsBranches user ",err)
+             reject(err)
+           })
+          });
+      },
+      CreateDepartment(d){
+        console.log("get all CreateDepartment o all lab ")
+        return new Promise((resolve, reject) => {
+           axios.get("c/dept/create",d)
+           .then((res)=>{
+             console.log("Response of CreateDepartment  ",res)
+             resolve(res.data)
+           })
+           .catch((err)=>{
+             console.log("ERR of GetLabsBranches user ",err)
+             reject(err)
+           })
+          });
+      },
+
    },
    persist: {
       storage: sessionStorage, // data in sessionStorage is cleared when the page session ends.
